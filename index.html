@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+     <link rel="shortlogo icon" type="x-icon" href=""> 
+  <meta charset="UTF-8" />
+  <title>Restaurant Chatbot</title>
+  <!-- Add this to the <head> -->
+<script src="https://unpkg.com/simple-spellchecker@1.0.3/dict.js"></script>
+
+  <style>
+    body { font-family: sans-serif; background: #f5f5f5; margin: 0; }
+    #chatbot { position: fixed; bottom: 20px; right: 20px; z-index: 1000; }
+    #toggle {
+      background: #007bff; color: white; border-radius: 50%;
+      width: 60px; height: 60px; font-size: 30px; border: none; cursor: pointer;
+    }
+    #box {
+      display: none; width: 320px; height: 450px;
+      background: white; border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+      display: flex; flex-direction: column;
+    }
+    
+    .header { background: #007bff; color: white; padding: 10px; text-align: center; }
+    .chat { flex: 1; overflow-y: auto; padding: 10px; }
+    .bot-msg, .user-msg {
+      margin: 5px 0; padding: 10px; border-radius: 10px; max-width: 80%;
+    }
+    .bot-msg { background: #eee; }
+    .user-msg { background: #007bff; color: white; margin-left: auto; }
+    .input-area {
+      display: flex; border-top: 1px solid #ddd;
+    }
+    .input-area input {
+      flex: 1; padding: 10px; border: none; outline: none;
+    }
+    .input-area button {
+      background: #007bff; color: white; border: none; padding: 0 15px; cursor: pointer;
+    }
+    form input, form textarea {
+      width: 100%; padding: 8px; margin: 5px 0;
+    }
+    form button {
+      width: 100%; padding: 10px; background: green; color: white; border: none; margin-top: 5px;
+    }
+  </style>
+</head>
+<body>
+
+<div id="chatbot">
+  <button id="toggle" onclick="toggleChat()">💬</button>
+  <div id="box">
+    <div class="header">Restaurant Bot</div>
+    <div class="chat" id="chatBox">
+      <div class="bot-msg">👋 Welcome! Type "order" to place your order.</div>
+    </div>
+    <div class="input-area">
+      <input type="text" id="userInput" placeholder="Type a message...">
+      <button onclick="handleUser()">➔</button>
+    </div>
+  </div>
+</div>
+
+<!-- Load EmailJS -->
+<script src="https://cdn.emailjs.com/dist/email.min.js"></script>
+<script>
+  emailjs.init("pYHa4w9ZztXb2UQ2W"); // Replace with your actual EmailJS User ID
+
+  const chatBox = document.getElementById("chatBox");
+
+  function toggleChat() {
+    const box = document.getElementById("box");
+    box.style.display = box.style.display === "none" || box.style.display === "" ? "flex" : "none";
+  }
+
+  function appendMessage(msg, sender) {
+    const div = document.createElement("div");
+    div.className = sender === "bot" ? "bot-msg" : "user-msg";
+    chatBox.appendChild(div);
+    chatBox.scrollTop = chatBox.scrollHeight;
+
+    if (sender === "bot") {
+      let i = 0;
+      const interval = setInterval(() => {
+        div.textContent += msg.charAt(i);
+        i++;
+        if (i >= msg.length) clearInterval(interval);
+        chatBox.scrollTop = chatBox.scrollHeight;
+      }, 30);
+    } else {
+      div.textContent = msg;
+    }
+  }
+
+  function handleUser() {
+    const input = document.getElementById("userInput");
+    const text = input.value.trim();
+    if (!text) return;
+    appendMessage(text, "user");
+    input.value = "";
+
+    const query = text.toLowerCase();
+
+    const faq = [
+       // 🧾 Menu / Food
+  { q: "menu", a: "🍽 Our menu includes: Biryani, Fried Rice, Kebab, Naan, Salad.      And kids menu= 👶: Mini Burger, Fries, Choco Shake" },
+  { q: "yes", a: "🍽 Our menu includes: Biryani, Fried Rice, Kebab, Naan, Salad.Our menu and food prices are,Biryani,= $1.5, Fried Rice,= $3.00  Kebab,=$1.2  Naan, Salad= $2.50  Burger,=$1.50  Fries, Choc Shake= $1.70 " },
+  { q: "price", a: " our food price =  Biryani,= $1.5, Fried Rice,= $3.00, chicken sandwich,=$1.50, Kebab,=$1.2  Naan, Salad= $2.50  Burger,=$1.50  Fries, Choc Shake= $1.70." },
+  { q: "best-selling", a: "🍽 Fried Rice, Kebab,Veg Fried Rice, Salad, Veg Cutlet, Mini Burger, Fries, Choco Shake Grilled Sandwich, Cold Coffee" },
+  { q: " sandwich", a: "Yes, chicken sandwich,=$1.50" },
+  { q: "popular", a: "🔥 Popular items: Chicken Biryani, Butter Chicken, Thai Soup." },
+  { q: "vegan", a: "🥗 Vegan options: Green Salad, Veg Fried Rice, Fruit Plate." },
+  { q: "new items", a: "🆕 New items: Garlic Butter Naan, Choco Lava Cake, Thai Soup." },
+  { q: " gluten-free", a: "Yes, our all food gluten-free. you can order trastly" },
+
+
+  // 🚚 Delivery / Time
+ 
+  { q: "delivery ", a: "🚚 Yes, we do home delivery.If you want to get home delivery, 💸 Delivery charge is $3  (Free for orders over $5). Fill out this form below." },
+  { q: "Delivery charge", a: "💸 Delivery charge is $3  (Free for orders over $5)." },
+   { q: "delivery fee", a: "💸 Delivery charge is $3  (Free for orders over $5)." },
+   { q: "fast", a: "💸 Delivery charge is $3 and time 30-45 minute (Free for frist time orders over)." },
+  { q: "delay", a: "🕒 Delivery delays may occur due to traffic." },
+   { q: "take", a: "💸 Delivery charge is $3 and time 30-45 minute (Free for frist time orders )." },
+   { q: "big orders", a: " No just (Free for frist time orders )." },
+   { q: "discounts", a: " No just (Free for frist time orders )." },
+    { q: "frist customers", a: " Yes, (Free for frist time orders )." },
+   { q: " my area", a: "Yes,  (plz your aderss )." },
+
+   // 💰 Price & Payment
+  { q: "payment", a: "💳 We accept Visa, MasterCard, PayPal, Interac e-Transfer." },
+  { q: "offer", a: "🎁 Get 10% off on your first order!" },
+   { q: "first time ", a: "🎁 Get 10% off on your first order!" },
+  { q: "cost", a: "Our menu and food prices are,Biryani,= $1.5, Fried Rice,= $3.00  Kebab,=$1.2  Naan, Salad= $2.50  Burger,=$1.50 Fries, Choc Shake= $1.70 " },
+  { q: "how The price of food at", a: "Our menu and food prices are,Biryani,= $1.5,   Fried Rice,= $3.00    Kebab,=$1.2  Naan, Salad= $2.50  Burger,=$1.50  Fries, Choc Shake= $1.70 " },
+  { q: "food price", a: "Our menu and food prices are,Biryani,= $1.5 , Fried Rice,= $3.00  Kebab,=$1.2  Naan, Salad= $2.50  Burger,=$1.50 Fries, Choc Shake= $1.70  " },
+
+
+
+   // 📞 Contact / Address
+  { q: "number", a: "📞 Customer Care: (416) 555-1234" },
+   { q: "located", a: "📍 789 Yonge St, Toronto, ON" },
+  { q: "location", a: "📍 789 Yonge St, Toronto, ON" },
+   { q: "table", a: "📅 To book a table, please send us your name and time. And Call us to arrange! at (416) 555-1234." },
+  { q: "book", a: "📅 To book a table, please send us your name and time. And Call us to arrange! at (416) 555-1234." },
+  { q: "booking", a: "📅 To book a table, please send us your name and time. And Call us to arrange! at (416) 555-1234." },
+
+
+  // 🧑‍🍳 Service / Reviews
+  { q: "dine-in", a: "🍴 Dine-in available from 10 AM to 10 PM." },
+  { q: "bulk", a: "📦 For large orders, please notify us 24 hours in advance." },
+  { q: "hot", a: "🔥 All food is served hot and fresh.You will understand when you get it" },
+   { q:"good", a: "yes,🔥 All food is served hot and fresh.You will understand when you get it" },
+
+
+
+
+   // ❓ Other
+  { q: "cancel", a: "❌ To cancel an order, please call: (416) 555-1234." },
+   { q: "ok", a: "thanks, see more times" },
+    { q: "by", a: "ok, more order." },
+     { q: "No", a: "ok," },
+  { q: "halal", a: "✅ All our meat is halal certified." },
+   { q: "party", a: "✅ Yes, we are provte some prty= any brithday , marage, or wins part habe ablable plz call  (416) 555-1234. " },
+  { q: "allergy", a: "⚠️ If you have allergies, let us know before ordering." },
+
+
+
+  // ❓ Other
+{ q: "cancel", a: "❌ To cancel an order, please call: (416) 555-1234." },
+{ q: "halal", a: "✅ All our meat is halal certified." },
+{ q: "allergy", a: "⚠️ If you have allergies, let us know before ordering." },
+{ q: "spicy", a: "🌶️ You can choose spice levels: Mild, Medium, or Hot." },
+{ q: "refund", a: "💵 Refunds are available within 24 hours for valid complaints." },
+{ q: "feedback", a: "🗣️ You can give feedback after your meal via our review form." },
+{ q: "reservation", a: "📞 For reservations, please call us at (416) 555-1234." },
+
+
+
+{ q: "book a table", a: "✅ You can book a table by calling us at (416) 555-1234." },
+{ q: "reservation", a: "📅 Yes! We accept reservations for up to 10 people." },
+{ q: "how to reserve", a: "📲 To reserve a table, call or send us your name, time, and number of guests." },
+{ q: "party table", a: "🎉 We offer party table booking for birthdays or events.please Call us to arrange! at (416) 555-1234." },
+{ q: "celebration  table", a: "🎉 We offer party table booking for birthdays or events. Call us to arrange! at(416) 555-1234." },
+{ q: "advance booking", a: "⏳ You can book a table up to 3 days in advance. please call us at (416) 555-1234." },
+
+
+       { q: "new items", a: "🆕 : Thai Soup, Butter Chicken, Garlic Naan" },
+       { q: "new menu", a: "🆕 : Thai Soup, Butter Chicken, Garlic Naan" },
+      { q: "more items", a: "🍽 : Pasta, Chicken Wings, Grilled Sandwich, Cold Coffee" },
+      { q: "new", a: "🍽 : Pasta, Chicken Wings, Grilled Sandwich, Cold Coffee" },
+      { q: "kids items", a: "👶: Mini Burger, Fries, Choco Shake " },
+      { q: "kids-menu", a: "👶: Mini Burger, Fries, Choco Shake" },
+      { q: "you manage", a: "🔥 Yes,  Our restaurant always Provides Angels and hot food."},
+      { q: "Menu", a: "🍽 Our menu includes Biryani, Naan, Kebab, Fried Rice, and Salad.      And kids menu= 👶: Mini Burger, Fries, Choco Shake " },
+     { q: "hi", a: "hello! how can help you. You can see our menu if you want. Thanks" },
+      { q: "open", a: "⏰ We are open daily from morning 10 AM. and close to night 11 PM. Visit our sope." },
+        { q: "hours", a: "⏰ We are open daily from morning 10 AM. and close to night 11 PM. Visit our sope." },
+      { q: "delivery", a: "🚚 Yes, we deliver to selected areas." },
+      { q: "order online ", a: "📝 Please fill in the order form below.", showForm: true },
+      { q: "order", a: "📝 Please fill in the order form below.", showForm: true },
+       { q: "fee", a: "💸 Delivery charge is $5 depending on your location." },
+      { q: "charge", a: "💸 Delivery charge is  $5 depending on your location." },
+      { q: "popular", a: "🌟 Beef Biryani and Mutton Kebab are our most popular dishes." },
+       { q: "vegetarian ", a: "Yes, 🥗 We offer Veg Fried Rice, Salad, and Veg Cutlet." },
+      { q: "vegan", a: "🥗 We offer Veg Fried Rice, Salad, and Veg Cutlet. " },
+      { q: "pay", a: "yes,." },
+       { q: "Interac e-Transfer", a: "No, only Manual,." },
+
+      { q: "dine", a: "🪑 Yes, we have dine-in service available." },
+      { q: "booking", a: "📞 To reserve a table, call us at: (416) 555-1234" },
+      { q: "bulk", a: "✅ We take bulk orders for events and corporate clients." },
+      { q: "time", a: "⏳ Delivery usually takes 30–45 minutes." },
+      { q: "number", a: "📞 Customer Care: (416) 555-1234" },
+      { q: "you manage hot foods", a: "🔥 Yes,  Our restaurant always Provides Angels and hot food."},
+      { q: " deliver", a: "🔥 Yes, food is delivered hot in insulated boxes." }
+      
+    ];
+
+    let matched = false;
+    for (let i = 0; i < faq.length; i++) {
+      if (query.includes(faq[i].q)) {
+        appendMessage(faq[i].a, "bot");
+        if (faq[i].showForm) showOrderForm();
+        matched = true;
+        break;
+      }
+    }
+
+    if (!matched) {
+      appendMessage("🤖 Sorry, I didn’t understand that. Please try again.", "bot");
+    }
+  }
+
+  function showOrderForm() {
+    const formHTML = `
+      <form id="orderForm">
+  <input type="text" name="user_name" placeholder="Your Name" required>
+  <input type="text" name="user_phone" placeholder="Phone Number" required>
+  <textarea name="user_order" placeholder="Your Order" required></textarea>
+  <input type="datetime-local" name="time" placeholder="Delivery Time" required>
+  <button type="submit">Submit</button>
+</form>
+
+    `;
+    const wrapper = document.createElement("div");
+    wrapper.innerHTML = formHTML;
+    chatBox.appendChild(wrapper);
+    chatBox.scrollTop = chatBox.scrollHeight;
+
+    document.getElementById("orderForm").addEventListener("submit", function(e) {
+      e.preventDefault();
+
+     emailjs.sendForm('service_kwbm4mg', 'template_bgahdzu', this) // Replace with your actual IDs
+        .then(function() {
+          appendMessage("✅ Your order has been received successfully. Thank you!", "bot");
+        }, function(error) {
+          appendMessage("❌ Failed to send order via Email.", "bot");
+          console.error("EmailJS error:", error);
+        });
+
+      e.target.remove();
+    });
+  }
+</script>
+
+</body>
+</html>
